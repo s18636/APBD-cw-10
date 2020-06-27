@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using APBD_cw_10.Models;
+using APBD_cw_10.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -28,6 +29,7 @@ namespace APBD_cw_10
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddScoped<IDbService, SqlServerDbService>();
             services.AddDbContext<s18636Context>(options =>
             {
                 options.UseSqlServer("Data Source=db-mssql;Initial Catalog=s18747;Integrated Security=True");
