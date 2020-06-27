@@ -1,6 +1,8 @@
 ﻿using APBD_cw_10.DTOs.requests;
+using APBD_cw_10.DTOs.Responses;
 using APBD_cw_10.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,13 +57,84 @@ namespace APBD_cw_10.Services
 
         public async Task<IActionResult> PromoteStudents(PromoteStudentRequest request)
         {
-            throw new NotImplementedException();
+            var enrollment = _context.Enrollment.Join(_context.Studies, e => e.IdStudy, s => s.IdStudy, (e, s) => new {
+                enrolIdStud = e.IdStudy,
+                studIdStud = s.IdStudy,
+                s.Name,
+                e.Semester
+                    }).FirstOrDefault(a => a.enrolIdStud == a.studIdStud &&
+                                      a.Name == request.StudiesName &&
+                                      a.Semester == request.Semester);
+
+            if (enrollment == null)
+            {
+                return new BadRequestResult();
+            }
+
+            try
+            {
+               _context.Database.ExecuteSqlRaw($"PromoteStudents {request.Semester},{request.StudiesName}");
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc);
+                return new BadRequestResult();
+            }
+
+            return new OkObjectResult(new PromoteStudentResponse
+            {
+                Studies = request.StudiesName,
+                Semester = request.Semester
+            });
         }
 
 
-        public Task<IActionResult> EnrollStudent(EnrollStudentRequest request)
+        public async Task<IActionResult> EnrollStudent(EnrollStudentRequest request)
         {
-            throw new NotImplementedException();
+            var IdStudy = _context.Studies.Where(s => s.Name == request.Studies)
+                .Select(s => s.IdStudy ).FirstOrDefault();
+
+            var enrollment = _context.Enrollment.FirstOrDefault(e => e.IdStudy == IdStudy && e.Semester == 1);
+
+            int enrollId;
+            if (enrollment == null)
+            {
+                enrollId = _context.Enrollment.Max(enr => enr.IdEnrollment) + 1;
+                _context.Enrollment.Add(new Enrollment()
+                {
+                    IdEnrollment = enrollId,
+                    Semester = 1,
+                    IdStudy = IdStudy,
+                    StartDate = DateTime.Now
+                });
+            }
+            else
+                enrollId = enrollment.IdEnrollment;
+
+
+            var newStudent = _context.Student.FirstOrDefault(st => st.IndexNumber == request.IndexNumber);
+
+            if (newStudent == null) return new BadRequestResult();
+
+          
+            _context.Student.Add(new Student()
+            {
+                IdEnrollment = enrollId,
+                BirthDate = request.Birthdate,
+                FirstName = request.FirstName,
+                LastName = request.LastName
+            });
+
+            await _context.SaveChangesAsync();
+            return new OkObjectResult(new EnrollStudentResponse()
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Birthdate = request.Birthdate,
+                IndexNumber = request.IndexNumber,
+                Semester = 1,
+                Studies = request.Studies
+            });
         }
 
 

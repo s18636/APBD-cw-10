@@ -33,9 +33,9 @@ namespace APBD_cw_10.Controllers
         }
 
         [HttpDelete("remove")]
-        public async Task<IActionResult> RemoveStudent(RemoveStudentRequest request)
+        public async Task<IActionResult> RemoveStudent(string IndexNumber)
         {
-            return await _service.RemoveStudent(request);
+            return await _service.RemoveStudent(IndexNumber);
         }
 
     }
